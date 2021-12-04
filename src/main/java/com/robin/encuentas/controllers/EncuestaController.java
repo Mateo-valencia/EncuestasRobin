@@ -25,23 +25,22 @@ public class EncuestaController {
     private final ModelMapper modelMapper;
 
     @PostMapping
-    public String save(@Valid @RequestBody EncuestaDto encuestaDto){
+    public String guardar(@Valid @RequestBody EncuestaDto encuestaDto){
         Encuesta encuesta = modelMapper.map(encuestaDto, Encuesta.class);
+        Long idEncuesta = 0L;
         try{
             if (ValidarDatos.validarEncuesta(encuesta)){
-                encuestaService.guardar(encuesta);
-            }else {
-                return "Ocurrio un Error al Guardar La encuesta";
+                idEncuesta = encuestaService.guardar(encuesta);
             }
         }catch (Exception e){
             logger.error(e.getMessage());
             return "Ocurrio un Error al Guardar La encuesta:" + e.getMessage();
         }
-        return "Encuesta Guardada con Exito.";
+        return "Encuesta Guardada con Exito. Su Id es :" + idEncuesta.toString();
     }
 
     @GetMapping("/obtener")
-    public EncuestaDto get(@RequestParam Long id) throws MyException {
+    public EncuestaDto consultar(@RequestParam Long id) throws MyException {
         Encuesta encuesta = encuestaService.consultar(id);
         if(Objects.nonNull(encuesta)){
             return modelMapper.map(encuesta,EncuestaDto.class);

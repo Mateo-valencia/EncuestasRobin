@@ -1,4 +1,4 @@
-package com.robin.encuentas.models;
+package com.robin.encuentas.Data;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +9,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor
 @Table(name = "t_respuesta")
-public class RespuestaModel {
+public class RespuestaData {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

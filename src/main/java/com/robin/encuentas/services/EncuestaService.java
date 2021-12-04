@@ -3,9 +3,9 @@ package com.robin.encuentas.services;
 import com.robin.encuentas.domain.Encuesta;
 import com.robin.encuentas.domain.Pregunta;
 import com.robin.encuentas.domain.Respuesta;
-import com.robin.encuentas.models.EncuestaModel;
-import com.robin.encuentas.models.PreguntaModel;
-import com.robin.encuentas.models.RespuestaModel;
+import com.robin.encuentas.Data.EncuestaData;
+import com.robin.encuentas.Data.PreguntaData;
+import com.robin.encuentas.Data.RespuestaData;
 import com.robin.encuentas.repositories.EncuestaRepository;
 import com.robin.encuentas.repositories.PreguntaRepository;
 import com.robin.encuentas.repositories.RespuestaRepository;
@@ -27,51 +27,55 @@ public class EncuestaService {
     private final RespuestaRepository respuestaRepository;
     private final ModelMapper modelMapper;
 
-    public void guardar(Encuesta encuesta) {
-        EncuestaModel encuestaModel = modelMapper.map(encuesta,EncuestaModel.class);
-        encuestaModel = encuestaRepository.save(encuestaModel);
+    public Long guardar(Encuesta encuesta) {
+        EncuestaData encuestaData = modelMapper.map(encuesta, EncuestaData.class);
+        encuestaData = encuestaRepository.save(encuestaData);
 
         for (Pregunta pregunta: encuesta.getPreguntas()) {
-            PreguntaModel preguntaModel = modelMapper.map(pregunta,PreguntaModel.class);
-            preguntaModel.setCdEncuesta(encuestaModel.getId());
-            preguntaModel = preguntaRepository.save(preguntaModel);
+            PreguntaData preguntaData = modelMapper.map(pregunta, PreguntaData.class);
+            preguntaData.setCdEncuesta(encuestaData.getId());
+            preguntaData = preguntaRepository.save(preguntaData);
             for (Respuesta respuesta:pregunta.getRespuestas()) {
-                RespuestaModel respuestaModel = modelMapper.map(respuesta,RespuestaModel.class);
-                respuestaModel.setCdPregunta(preguntaModel.getId());
-                respuestaRepository.save(respuestaModel);
+                RespuestaData respuestaData = modelMapper.map(respuesta, RespuestaData.class);
+                respuestaData.setCdPregunta(preguntaData.getId());
+                respuestaRepository.save(respuestaData);
             }
         }
+        return encuestaData.getId();
     }
 
     public Encuesta consultar(Long id){
-        Optional<EncuestaModel> encuestaModel = encuestaRepository.findById(id);
+        Optional<EncuestaData> encuestaData = encuestaRepository.findById(id);
+        if (encuestaData.isPresent()){
+            Encuesta encuesta = modelMapper.map(encuestaData.get(),Encuesta.class);
+            Optional<List<PreguntaData>> preguntaModelList = preguntaRepository.findByCdEncuesta(id);
 
-        if (encuestaModel.isPresent()){
-            Encuesta encuesta = modelMapper.map(encuestaModel.get(),Encuesta.class);
-            Optional<List<PreguntaModel>> preguntaModelList = preguntaRepository.findByCdEncuesta(id);
-
-            if (preguntaModelList.isPresent()){
-                List<Pregunta> preguntas = new ArrayList<>();
-                for (PreguntaModel preguntaModel: preguntaModelList.get()) {
-                    Pregunta pregunta = modelMapper.map(preguntaModel,Pregunta.class);
-                    if (RESPUESTA_MULTIPLE.equalsIgnoreCase(pregunta.getTipoRespuesta())){
-                        Optional<List<RespuestaModel>> respuestaModelList = respuestaRepository.findAllByCdPregunta(preguntaModel.getId());
-
-                        if (respuestaModelList.isPresent()){
-                            List<Respuesta> respuestas = new ArrayList<>();
-                            for (RespuestaModel respuestaModel:respuestaModelList.get()) {
-                                respuestas.add(modelMapper.map(respuestaModel,Respuesta.class));
-                            }
-                            pregunta.setRespuestas(respuestas);
-                        }
-                    }
-                    preguntas.add(pregunta);
-                }
-                encuesta.setPreguntas(preguntas);
-            }
-            return encuesta;
+            return preguntaModelList.isPresent()
+                    ? consultarRespuestas(encuesta,preguntaModelList)
+                    : null;
         }else{
             return null;
         }
+    }
+
+    private Encuesta consultarRespuestas(Encuesta encuesta, Optional<List<PreguntaData>> preguntaModelList) {
+        List<Pregunta> preguntas = new ArrayList<>();
+        for (PreguntaData preguntaData : preguntaModelList.get()) {
+            Pregunta pregunta = modelMapper.map(preguntaData,Pregunta.class);
+            if (RESPUESTA_MULTIPLE.equalsIgnoreCase(pregunta.getTipoRespuesta())){
+                Optional<List<RespuestaData>> respuestaModelList = respuestaRepository.findAllByCdPregunta(preguntaData.getId());
+
+                if (respuestaModelList.isPresent()){
+                    List<Respuesta> respuestas = new ArrayList<>();
+                    for (RespuestaData respuestaData :respuestaModelList.get()) {
+                        respuestas.add(modelMapper.map(respuestaData,Respuesta.class));
+                    }
+                    pregunta.setRespuestas(respuestas);
+                }
+            }
+            preguntas.add(pregunta);
+        }
+        encuesta.setPreguntas(preguntas);
+        return encuesta;
     }
 }
