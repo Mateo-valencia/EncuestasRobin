@@ -50,32 +50,38 @@ public class EncuestaService {
             Encuesta encuesta = modelMapper.map(encuestaData.get(),Encuesta.class);
             Optional<List<PreguntaData>> preguntaModelList = preguntaRepository.findByCdEncuesta(id);
 
-            return preguntaModelList.isPresent()
-                    ? consultarRespuestas(encuesta,preguntaModelList)
-                    : null;
+            return consultarRespuestas(encuesta,preguntaModelList);
         }else{
             return null;
         }
     }
 
     private Encuesta consultarRespuestas(Encuesta encuesta, Optional<List<PreguntaData>> preguntaModelList) {
-        List<Pregunta> preguntas = new ArrayList<>();
-        for (PreguntaData preguntaData : preguntaModelList.get()) {
-            Pregunta pregunta = modelMapper.map(preguntaData,Pregunta.class);
-            if (RESPUESTA_MULTIPLE.equalsIgnoreCase(pregunta.getTipoRespuesta())){
-                Optional<List<RespuestaData>> respuestaModelList = respuestaRepository.findAllByCdPregunta(preguntaData.getId());
+       if (preguntaModelList.isPresent()){
+           List<Pregunta> preguntas = new ArrayList<>();
+           for (PreguntaData preguntaData : preguntaModelList.get()) {
+               Pregunta pregunta = modelMapper.map(preguntaData,Pregunta.class);
+               preguntas.add(consultarRespuestas(preguntaData, pregunta));
+           }
+           encuesta.setPreguntas(preguntas);
+           return encuesta;
+       }else {
+           return null;
+       }
+    }
 
-                if (respuestaModelList.isPresent()){
-                    List<Respuesta> respuestas = new ArrayList<>();
-                    for (RespuestaData respuestaData :respuestaModelList.get()) {
-                        respuestas.add(modelMapper.map(respuestaData,Respuesta.class));
-                    }
-                    pregunta.setRespuestas(respuestas);
+    private Pregunta consultarRespuestas(PreguntaData preguntaData, Pregunta pregunta) {
+        if (RESPUESTA_MULTIPLE.equalsIgnoreCase(pregunta.getTipoRespuesta())){
+            Optional<List<RespuestaData>> respuestaModelList = respuestaRepository.findAllByCdPregunta(preguntaData.getId());
+
+            if (respuestaModelList.isPresent()){
+                List<Respuesta> respuestas = new ArrayList<>();
+                for (RespuestaData respuestaData :respuestaModelList.get()) {
+                    respuestas.add(modelMapper.map(respuestaData,Respuesta.class));
                 }
+                pregunta.setRespuestas(respuestas);
             }
-            preguntas.add(pregunta);
         }
-        encuesta.setPreguntas(preguntas);
-        return encuesta;
+        return pregunta;
     }
 }
