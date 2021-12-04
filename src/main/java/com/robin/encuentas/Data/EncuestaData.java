@@ -1,11 +1,13 @@
 package com.robin.encuentas.Data;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 
-@Data
+@Setter
+@Getter
 @Entity
 @NoArgsConstructor
 @Table(name = "t_encuesta")
